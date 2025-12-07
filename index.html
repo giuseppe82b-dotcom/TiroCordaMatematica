@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiro alla Fune Matematica</title>
+    <style>
+        :root {
+            --bg-color: #2b2d42;
+            --blue-team: #4361ee;
+            --blue-dark: #3a0ca3;
+            --red-team: #e63946;
+            --red-dark: #9d0208;
+            --rope-color: #fca311;
+            --skin-color: #ffcdb2;
+            --text-color: #fff;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            user-select: none;
+        }
+
+        /* --- SETUP SCREEN --- */
+        #setup-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center;
+        }
+        
+        /* NUOVO STILE PER L'IMMAGINE LOGO */
+        .logo-img {
+            max-width: 280px;  /* Larghezza massima */
+            width: 100%;
+            height: auto;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .file-box {
+            border: 2px dashed #666; padding: 40px; border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            margin-bottom: 20px;
+        }
+
+        /* STILE DEI LINK AGGIUNTI */
+        .utility-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .btn-link {
+            text-decoration: none;
+            background-color: #444;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #666;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-link:hover {
+            background-color: #666;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        /* --- VISUAL ARENA (TOP) --- */
+        #visual-arena {
+            height: 35vh; width: 100%; position: relative;
+            background: linear-gradient(to bottom, #1a1b26, #2b2d42);
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+            border-bottom: 5px solid rgba(0,0,0,0.3);
+        }
+
+        .center-marker {
+            position: absolute; height: 100%; width: 2px;
+            background: rgba(255,255,255,0.1); left: 50%; z-index: 0;
+        }
+
+        #tug-container {
+            position: relative; width: 600px; height: 200px;
+            display: flex; align-items: center; justify-content: space-between;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1); /* Scattante per real time */
+            z-index: 10;
+        }
+
+        .rope-line {
+            position: absolute; top: 55%; left: 50px; right: 50px; height: 8px;
+            background: repeating-linear-gradient(45deg, #d38e05, #d38e05 10px, #fca311 10px, #fca311 20px);
+            z-index: 1; transform: translateY(-50%);
+            box-shadow: 0 5px 5px rgba(0,0,0,0.5);
+        }
+        
+        .flag {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -100%);
+            font-size: 3rem; margin-top: -10px; z-index: 2;
+        }
+
+        /* CHARACTERS (CSS) */
+        .char { width: 80px; height: 140px; position: relative; z-index: 5; }
+        .char-head { width: 50px; height: 50px; background: var(--skin-color); border-radius: 50%; position: absolute; top: 0; left: 15px; }
+        .char-body { width: 50px; height: 70px; position: absolute; top: 45px; left: 15px; border-radius: 10px; }
+        .char-leg { width: 15px; height: 40px; position: absolute; top: 100px; border-radius: 10px; }
+        .char-arm { width: 60px; height: 15px; position: absolute; top: 55px; left: -5px; border-radius: 10px; transform-origin: right center; transform: rotate(-10deg); }
+
+        /* Team Blue */
+        .char.blue .char-body, .char.blue .char-arm { background: var(--blue-team); }
+        .char.blue .char-leg { background: var(--blue-dark); }
+        .char.blue .leg-l { left: 15px; transform: rotate(15deg); }
+        .char.blue .leg-r { left: 45px; transform: rotate(-20deg); }
+
+        /* Team Red (Mirrored) */
+        .char.red { transform: scaleX(-1); } 
+        .char.red .char-body, .char.red .char-arm { background: var(--red-team); }
+        .char.red .char-leg { background: var(--red-dark); }
+        .char.red .leg-l { left: 15px; transform: rotate(15deg); }
+        .char.red .leg-r { left: 45px; transform: rotate(-20deg); }
+
+        /* Animation class applied on pull */
+        .pulling-anim { animation: pull 0.3s ease-in-out; }
+        @keyframes pull { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* --- BATTLE GROUND (SPLIT SCREEN) --- */
+        #battle-ground { flex: 1; display: flex; width: 100%; }
+
+        .team-zone {
+            flex: 1; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            position: relative;
+            border-top: 5px solid transparent;
+        }
+
+        .zone-blue { background-color: rgba(67, 97, 238, 0.05); border-right: 1px solid #444; border-top-color: var(--blue-team); }
+        .zone-red { background-color: rgba(230, 57, 70, 0.05); border-top-color: var(--red-team); }
+
+        .team-title { font-size: 1.5rem; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
+        .text-blue { color: var(--blue-team); }
+        .text-red { color: var(--red-team); }
+
+        .question-card {
+            background: #fff; color: #333;
+            padding: 15px; border-radius: 10px;
+            width: 85%; min-height: 90px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        
+        .math-eq { font-size: 2.5rem; font-weight: 800; margin: 0; }
+        .diff-badge { font-size: 0.75rem; background: #333; color: white; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; }
+
+        .input-screen {
+            background: #000; color: #0f0;
+            font-family: 'Courier New', monospace; font-size: 2rem;
+            width: 85%; padding: 10px; text-align: right;
+            border-radius: 5px; margin-bottom: 15px;
+            min-height: 40px; border: 2px solid #555;
+        }
+
+        /* KEYPADS */
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 90%; max-width: 320px; }
+        .key {
+            padding: 15px; font-size: 1.4rem; border: none; border-radius: 8px;
+            cursor: pointer; color: white; font-weight: bold;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: transform 0.05s;
+        }
+        .key:active { transform: translateY(4px); box-shadow: none; }
+        
+        /* Key Colors */
+        .key.blue { background-color: var(--blue-team); }
+        .key.blue-dark { background-color: var(--blue-dark); }
+        .key.red { background-color: var(--red-team); }
+        .key.red-dark { background-color: var(--red-dark); }
+        .key.zero { grid-column: span 2; }
+        .key.enter { grid-column: span 3; background: #fff; }
+        .key.enter.blue-t { color: var(--blue-team); }
+        .key.enter.red-t { color: var(--red-team); }
+
+        /* FEEDBACK ANIMATIONS */
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+
+        /* WIN OVERLAY */
+        #win-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 200;
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        .win-msg { font-size: 4rem; font-weight: bold; margin-bottom: 20px; animation: pop 0.5s; }
+        @keyframes pop { from {transform: scale(0);} to {transform: scale(1);} }
+
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <img src="TiroAllaFune.png" alt="Logo Tiro alla Fune" class="logo-img">
+        
+        <h1 style="font-size: 3rem; margin-bottom: 10px; margin-top: 0;">Tiro alla Fune Matematica</h1>
+        
+        <p style="opacity: 0.8; margin-bottom: 20px;">Sfida in simultanea: vince il più veloce!</p>
+        
+        <div class="file-box">
+            <p>Carica il file delle domande (.json)</p>
+            <input type="file" id="json-input" accept=".json">
+            <p id="error-msg" style="color: orange; margin-top: 10px;"></p>
+        </div>
+
+        <div class="utility-links">
+            <a href="esempio.json" download="esempio.json" class="btn-link">
+                📥 Scarica Esempio JSON
+            </a>
+            <a href="generatore_domande.html" target="_blank" class="btn-link">
+                ⚙️ Generatore Domande
+            </a>
+        </div>
+        
+        <br>
+        <small style="opacity: 0.5;">Formato JSON richiesto: array di oggetti "question", "answer", "difficulty"</small>
+    </div>
+
+    <div id="visual-arena">
+        <div class="center-marker"></div>
+        <div id="tug-container">
+            <div class="rope-line"></div>
+            <div class="flag">🚩</div>
+            
+            <div class="char blue" id="char-blue">
+                <div class="char-head"></div><div class="char-arm"></div><div class="char-body"></div><div class="char-leg leg-l"></div><div class="char-leg leg-r"></div>
+            </div>
+            <div class="char red" id="char-red">
+                <div class="char-head"></div><div class="char-arm"></div><div class="char-body"></div><div class="char-leg leg-l"></div><div class="char-leg leg-r"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="battle-ground">
+        
+        <div class="team-zone zone-blue">
+            <div class="team-title text-blue">BLU</div>
+            <div class="question-card" id="card-a">
+                <div class="diff-badge" id="badge-a">LVL 1</div>
+                <div class="math-eq" id="q-a">...</div>
+            </div>
+            <div id="input-a" class="input-screen"></div>
+            
+            <div class="keypad">
+                <button class="key blue" onclick="tap('A', 7)">7</button>
+                <button class="key blue" onclick="tap('A', 8)">8</button>
+                <button class="key blue" onclick="tap('A', 9)">9</button>
+                <button class="key blue" onclick="tap('A', 4)">4</button>
+                <button class="key blue" onclick="tap('A', 5)">5</button>
+                <button class="key blue" onclick="tap('A', 6)">6</button>
+                <button class="key blue" onclick="tap('A', 1)">1</button>
+                <button class="key blue" onclick="tap('A', 2)">2</button>
+                <button class="key blue" onclick="tap('A', 3)">3</button>
+                <button class="key blue-dark" onclick="tap('A', 'C')">DEL</button>
+                <button class="key blue zero" onclick="tap('A', 0)">0</button>
+                <button class="key enter blue-t" onclick="submit('A')">INVIA</button>
+            </div>
+        </div>
+
+        <div class="team-zone zone-red">
+            <div class="team-title text-red">ROSSA</div>
+            <div class="question-card" id="card-b">
+                <div class="diff-badge" id="badge-b">LVL 1</div>
+                <div class="math-eq" id="q-b">...</div>
+            </div>
+            <div id="input-b" class="input-screen"></div>
+
+            <div class="keypad">
+                <button class="key red" onclick="tap('B', 7)">7</button>
+                <button class="key red" onclick="tap('B', 8)">8</button>
+                <button class="key red" onclick="tap('B', 9)">9</button>
+                <button class="key red" onclick="tap('B', 4)">4</button>
+                <button class="key red" onclick="tap('B', 5)">5</button>
+                <button class="key red" onclick="tap('B', 6)">6</button>
+                <button class="key red" onclick="tap('B', 1)">1</button>
+                <button class="key red" onclick="tap('B', 2)">2</button>
+                <button class="key red" onclick="tap('B', 3)">3</button>
+                <button class="key red-dark" onclick="tap('B', 'C')">DEL</button>
+                <button class="key red zero" onclick="tap('B', 0)">0</button>
+                <button class="key enter red-t" onclick="submit('B')">INVIA</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="win-overlay">
+        <div id="win-txt" class="win-msg">VITTORIA</div>
+        <button onclick="location.reload()" style="padding:15px 30px; font-size:1.5rem; border-radius:10px; border:none; cursor:pointer;">Nuova Partita</button>
+    </div>
+
+    <script>
+        // --- LOGICA DI GIOCO ---
+        let questions = [];
+        let ropePos = 0; // -6 (Blu vince) ... +6 (Rossa vince)
+        const WIN_STEPS = 6;
+        
+        let inputs = { A: "", B: "" };
+        let currentQ = { A: null, B: null };
+
+        // Caricamento JSON
+        document.getElementById('json-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    questions = JSON.parse(evt.target.result);
+                    if(Array.isArray(questions)) startGame();
+                } catch(err) {
+                    document.getElementById('error-msg').textContent = "JSON non valido";
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function startGame() {
+            document.getElementById('setup-screen').style.display = 'none';
+            // Genera domande per ENTRAMBE le squadre
+            generateQuestion('A');
+            generateQuestion('B');
+            updateVisuals();
+        }
+
+        function getDifficultyForTeam(team) {
+            // Se ropePos è negativo (es. -3), Blu sta vincendo di 3 passi.
+            // Se ropePos è positivo (es. +3), Rossa sta vincendo di 3 passi.
+            
+            let advantage = 0;
+            
+            if (team === 'A') {
+                // Blu gioca. Se ropePos < 0 (Blu vince), livello sale.
+                if (ropePos < 0) advantage = Math.abs(ropePos);
+            } else {
+                // Rossa gioca. Se ropePos > 0 (Rossa vince), livello sale.
+                if (ropePos > 0) advantage = ropePos;
+            }
+
+            // Livello base 1 + svantaggio avversario. Max 6.
+            let level = 1 + advantage;
+            if(level > 6) level = 6;
+            return level;
+        }
+
+        function generateQuestion(team) {
+            const level = getDifficultyForTeam(team);
+            
+            // Filtra domande per livello
+            let pool = questions.filter(q => q.difficulty == level);
+            if(pool.length === 0) pool = questions; // Fallback se mancano domande
+
+            const q = pool[Math.floor(Math.random() * pool.length)];
+            currentQ[team] = q;
+
+            // Renderizza solo per quella squadra
+            const prefix = (team === 'A') ? 'a' : 'b'; // ID mapping a/b lowercase
+            document.getElementById(`q-${prefix}`).textContent = q.question + " = ?";
+            document.getElementById(`badge-${prefix}`).textContent = "LVL " + level;
+            
+            // Reset input
+            inputs[team] = "";
+            document.getElementById(`input-${prefix}`).textContent = "";
+        }
+
+        function tap(team, val) {
+            if(val === 'C') inputs[team] = "";
+            else if(inputs[team].length < 8) inputs[team] += val;
+            
+            const prefix = (team === 'A') ? 'a' : 'b';
+            document.getElementById(`input-${prefix}`).textContent = inputs[team];
+        }
+
+        function submit(team) {
+            if(inputs[team] === "") return;
+
+            const val = parseFloat(inputs[team]);
+            const correct = parseFloat(currentQ[team].answer);
+
+            if (val === correct) {
+                // --- RISPOSTA CORRETTA ---
+                
+                // 1. Sposta la corda
+                if (team === 'A') ropePos -= 1; // Tira a sinistra
+                else ropePos += 1; // Tira a destra
+
+                updateVisuals();
+
+                // 2. Controllo Vittoria
+                if (ropePos <= -WIN_STEPS) endGame('BLU');
+                else if (ropePos >= WIN_STEPS) endGame('ROSSA');
+                else {
+                    // 3. Nuova domanda SOLO per chi ha indovinato
+                    // L'altra squadra continua a cercare di risolvere la sua!
+                    generateQuestion(team);
+                    
+                    // Animazione feedback positivo
+                    const prefix = (team === 'A') ? 'a' : 'b';
+                    document.getElementById(`card-${prefix}`).style.background = "#d4edda";
+                    setTimeout(() => document.getElementById(`card-${prefix}`).style.background = "#fff", 200);
+                }
+
+            } else {
+                // --- RISPOSTA ERRATA ---
+                const prefix = (team === 'A') ? 'a' : 'b';
+                const card = document.getElementById(`card-${prefix}`);
+                
+                // Feedback visivo negativo
+                card.style.background = "#f8d7da";
+                card.classList.add('shake');
+                
+                // Clear input
+                inputs[team] = "";
+                document.getElementById(`input-${prefix}`).textContent = "ERR";
+
+                setTimeout(() => {
+                    card.style.background = "#fff";
+                    card.classList.remove('shake');
+                    document.getElementById(`input-${prefix}`).textContent = "";
+                }, 500);
+            }
+        }
+
+        function updateVisuals() {
+            // ropePos va da -6 a +6.
+            // 0 = Centro. Max spostamento circa 45%.
+            const percent = ropePos * 7.5; 
+            document.getElementById('tug-container').style.transform = `translateX(${percent}%)`;
+        }
+
+        function endGame(winner) {
+            const overlay = document.getElementById('win-overlay');
+            const txt = document.getElementById('win-txt');
+            overlay.style.display = 'flex';
+            txt.textContent = winner + " VINCE!";
+            txt.style.color = (winner === 'BLU') ? 'var(--blue-team)' : 'var(--red-team)';
+        }
+
+    </script>
+</body>
+</html>

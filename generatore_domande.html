@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Generatore JSON Math War</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+        textarea { width: 100%; height: 400px; margin-top: 10px; font-family: monospace; }
+        button { padding: 10px 20px; font-size: 1.2rem; cursor: pointer; background: #4361ee; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Generatore Domande Math War</h1>
+    <p>Clicca il pulsante per generare 30 nuove domande per ogni livello (Totale 180).</p>
+    <button onclick="generateAndShow()">Genera JSON</button>
+    <br><br>
+    <textarea id="output" readonly placeholder="Il JSON apparirà qui..."></textarea>
+
+    <script>
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateQuestions() {
+            let questions = [];
+            const questionsPerLevel = 30;
+
+            for (let level = 1; level <= 6; level++) {
+                for (let i = 0; i < questionsPerLevel; i++) {
+                    let qObj = createQuestion(level);
+                    // Assicuriamoci che il risultato sia positivo e intero (lo script lo garantisce, ma doppio check)
+                    if (qObj) questions.push(qObj);
+                    else i--; // Riprova se fallisce
+                }
+            }
+            return JSON.stringify(questions, null, 2);
+        }
+
+        function createQuestion(level) {
+            let qText = "";
+            let answer = 0;
+
+            // Helper per numeri random
+            const n = (max=10) => getRandomInt(1, max);
+            const nLarge = (max=50) => getRandomInt(10, max);
+
+            // Generazione basata sui pattern dei livelli
+            try {
+                switch(level) {
+                    case 1: // Parentesi tonde, +, -
+                        // Es: (A + B) - C
+                        if(Math.random() < 0.5) {
+                            let a = n(20), b = n(20), c = n(10);
+                            qText = `(${a} + ${b}) - ${c}`;
+                        } else {
+                            let a = n(20), b = n(10), c = n(10);
+                            qText = `${a} + (${b} - ${c})`; 
+                        }
+                        break;
+
+                    case 2: // Tonde e Quadre, +, -
+                        // Es: [A - (B + C)] + D
+                        let a2 = n(30), b2 = n(10), c2 = n(5), d2 = n(10);
+                        qText = `[${a2} - (${b2} + ${c2})] + ${d2}`;
+                        break;
+
+                    case 3: // Tonde e Quadre, +, -, *
+                        // Es: 2 x [ (A + B) - C ]
+                        let mul = n(5);
+                        let a3 = n(10), b3 = n(10), c3 = n(5);
+                        qText = `${mul} x [(${a3} + ${b3}) - ${c3}]`;
+                        break;
+
+                    case 4: // Tonde, Quadre, Graffe, +, -, *
+                        // Es: { 2 x [ A + (B x C) ] } - D
+                        let m1 = n(4), m2 = n(4);
+                        let a4 = n(10), b4 = n(5), d4 = n(20);
+                        qText = `{ ${m1} x [ ${a4} + (${b4} x ${m2}) ] } - ${d4}`;
+                        break;
+
+                    case 5: // Tutte parentesi, +, -, *, /
+                        // Es: { A / [ B + (C / D) ] } x E  (Semplificato per garantire interi: Costruiamo al contrario)
+                        // Costruiamo un numero facile:
+                        let base = n(5); 
+                        let mult = n(5);
+                        let resInside = base * mult; // 20
+                        // Ora resInside deve essere (A + B)
+                        let valA = n(resInside - 1);
+                        let valB = resInside - valA;
+                        // valB deve essere (C x D)
+                        // ... questo approccio è complesso per uno script veloce.
+                        // Usiamo template sicuri:
+                        let x = n(5) * 2; // pari
+                        let y = n(5);
+                        qText = `{ [ (${x*y} / ${y}) + ${n(10)} ] x ${n(3)+1} } - ${n(10)}`;
+                        break;
+
+                    case 6: // Livello massimo
+                        // Es: { [ (A / B) x C ] - D } + E
+                        let div = n(5)+1;
+                        let num = div * n(10); // assicura divisibilità
+                        let mul6 = n(5)+1;
+                        qText = `{ [ (${num} / ${div}) x ${mul6} ] - ${n(10)} } + ${n(20)}`;
+                        break;
+                }
+
+                // Sostituisci le 'x' con '*' per calcolare, ma tieni 'x' per visualizzare
+                let evalText = qText.replace(/x/g, '*').replace(/[\[\{]/g, '(').replace(/[\]\}]/g, ')');
+                answer = eval(evalText);
+
+                // Scartiamo risultati negativi, non interi o troppo grandi
+                if (!Number.isInteger(answer) || answer < 0 || answer > 500) return null;
+
+                return {
+                    "question": qText,
+                    "answer": answer,
+                    "difficulty": level
+                };
+
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function generateAndShow() {
+            const json = generateQuestions();
+            document.getElementById('output').value = json;
+        }
+    </script>
+</body>
+</html>
