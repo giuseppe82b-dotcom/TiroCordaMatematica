@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiro alla Fune - Master Parentesi</title>
+    <title>Tiro alla Fune - Turni 5s</title>
     <style>
         :root {
             --bg-color: #2b2d42;
@@ -35,11 +35,6 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-align: center;
         }
-        
-        .logo-img {
-            max-width: 280px; width: 100%; height: auto;
-            margin-bottom: 15px; display: block;
-        }
 
         .start-box {
             border: 2px solid #666; padding: 40px; border-radius: 20px;
@@ -58,7 +53,7 @@
 
         /* --- VISUAL ARENA (TOP) --- */
         #visual-arena {
-            height: 35vh; width: 100%; position: relative;
+            height: 30vh; width: 100%; position: relative;
             background: linear-gradient(to bottom, #1a1b26, #2b2d42);
             overflow: hidden; display: flex; align-items: center; justify-content: center;
             border-bottom: 5px solid rgba(0,0,0,0.3);
@@ -70,7 +65,7 @@
         }
 
         #tug-container {
-            position: relative; width: 600px; height: 200px;
+            position: relative; width: 600px; height: 150px;
             display: flex; align-items: center; justify-content: space-between;
             transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
             z-index: 10;
@@ -89,7 +84,7 @@
             font-size: 3rem; margin-top: -10px; z-index: 2;
         }
 
-        /* CHARACTERS (CSS) */
+        /* CHARACTERS */
         .char { width: 80px; height: 140px; position: relative; z-index: 5; }
         .char-head { width: 50px; height: 50px; background: var(--skin-color); border-radius: 50%; position: absolute; top: 0; left: 15px; }
         .char-body { width: 50px; height: 70px; position: absolute; top: 45px; left: 15px; border-radius: 10px; }
@@ -107,18 +102,41 @@
         .char.red .leg-l { left: 15px; transform: rotate(15deg); }
         .char.red .leg-r { left: 45px; transform: rotate(-20deg); }
 
+        /* --- TIMER BAR --- */
+        #timer-container {
+            width: 100%; height: 10px; background: #333; position: relative;
+        }
+        #timer-bar {
+            height: 100%; width: 100%; background: #0f0; 
+            transition: width 1s linear, background 0.3s;
+        }
+
         /* --- BATTLE GROUND --- */
-        #battle-ground { flex: 1; display: flex; width: 100%; }
+        #battle-ground { flex: 1; display: flex; width: 100%; position: relative;}
+
+        /* TIMER CENTRALE */
+        #turn-indicator {
+            position: absolute; left: 50%; top: -30px; transform: translateX(-50%);
+            width: 80px; height: 80px;
+            background: #222; border: 4px solid #fff; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; font-weight: bold; color: #fff;
+            z-index: 50; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
 
         .team-zone {
             flex: 1; padding: 10px;
             display: flex; flex-direction: column; align-items: center;
             position: relative;
-            border-top: 5px solid transparent;
+            transition: opacity 0.3s, filter 0.3s;
         }
 
-        .zone-blue { background-color: rgba(67, 97, 238, 0.05); border-right: 1px solid #444; border-top-color: var(--blue-team); }
-        .zone-red { background-color: rgba(230, 57, 70, 0.05); border-top-color: var(--red-team); }
+        /* Stili per turno attivo/inattivo */
+        .zone-active { opacity: 1; filter: none; pointer-events: auto; }
+        .zone-inactive { opacity: 0.3; filter: grayscale(100%); pointer-events: none; }
+
+        .zone-blue { background-color: rgba(67, 97, 238, 0.05); border-right: 1px solid #444; }
+        .zone-red { background-color: rgba(230, 57, 70, 0.05); }
 
         .team-title { font-size: 1.5rem; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; }
         .text-blue { color: var(--blue-team); }
@@ -133,16 +151,10 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
         
-        /* Modifica per adattare espressioni lunghe */
         .math-eq { 
-            font-size: 1.8rem; /* Un po' più piccolo per le parentesi lunghe */
-            font-weight: 700; 
-            margin: 0; 
-            white-space: nowrap; /* Impedisce di andare a capo */
-            font-family: 'Consolas', 'Courier New', monospace; /* Font monospaziato per le espressioni */
+            font-size: 1.8rem; font-weight: 700; margin: 0; 
+            white-space: nowrap; font-family: 'Consolas', 'Courier New', monospace;
         }
-        
-        /* Media query per schermi piccoli */
         @media (max-width: 800px) { .math-eq { font-size: 1.4rem; } }
 
         .diff-badge { font-size: 0.75rem; background: #333; color: white; padding: 2px 8px; border-radius: 4px; margin-bottom: 5px; }
@@ -189,11 +201,11 @@
 
     <div id="setup-screen">
         <h1 style="font-size: 3rem; margin-bottom: 10px; margin-top: 50px;">Tiro alla Fune</h1>
-        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Edizione Parentesi: ( ) [ ] { }</h2>
+        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Sfida a Turni: 5 Secondi!</h2>
         
         <div class="start-box">
-            <p>Risolvi le espressioni per tirare la fune.</p>
-            <p style="font-size: 0.9rem; opacity: 0.7;">Più sei vicino alla vittoria, più le parentesi diventano complesse!</p>
+            <p>5 secondi per rispondere.</p>
+            <p>Se sbagli o scade il tempo, tocca all'avversario.</p>
             <button class="btn-start" onclick="startGame()">INIZIA PARTITA</button>
         </div>
     </div>
@@ -213,9 +225,13 @@
         </div>
     </div>
 
+    <div id="timer-container"><div id="timer-bar"></div></div>
+
     <div id="battle-ground">
         
-        <div class="team-zone zone-blue">
+        <div id="turn-indicator">5</div>
+
+        <div class="team-zone zone-blue" id="zone-A">
             <div class="team-title text-blue">BLU</div>
             <div class="question-card" id="card-a">
                 <div class="diff-badge" id="badge-a">LVL 1</div>
@@ -239,7 +255,7 @@
             </div>
         </div>
 
-        <div class="team-zone zone-red">
+        <div class="team-zone zone-red" id="zone-B">
             <div class="team-title text-red">ROSSA</div>
             <div class="question-card" id="card-b">
                 <div class="diff-badge" id="badge-b">LVL 1</div>
@@ -272,22 +288,26 @@
 
     <script>
         // --- LOGICA DI GIOCO ---
-        let ropePos = 0; // -6 (Blu vince) ... +6 (Rossa vince)
+        let ropePos = 0; // -6 (Blu) ... +6 (Rossa)
         const WIN_STEPS = 6;
         
         let inputs = { A: "", B: "" };
         let currentQ = { A: null, B: null };
+        
+        // TURN LOGIC
+        let activeTeam = 'A'; // 'A' (Blu) o 'B' (Rossa)
+        let timerVal = 5;
+        let timerRef = null;
 
         function getRandomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        // --- GENERATORE ESPRESSIONI CON PARENTESI ---
+        // --- GENERATORE ESPRESSIONI (Con Parentesi) ---
         function createMathProblem(level) {
             let n1, n2, n3, n4;
-            
             switch(level) {
-                case 1: // Base senza parentesi
+                case 1: // Base
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 12); n2 = getRandomInt(2, 12);
                         return { question: `${n1} + ${n2}`, answer: n1 + n2 };
@@ -295,99 +315,112 @@
                         n1 = getRandomInt(10, 20); n2 = getRandomInt(1, 9);
                         return { question: `${n1} - ${n2}`, answer: n1 - n2 };
                     }
-
-                case 2: // Moltiplicazioni e Divisioni semplici
+                case 2: // Moltiplicazioni/Divisioni
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 9); n2 = getRandomInt(2, 9);
                         return { question: `${n1} × ${n2}`, answer: n1 * n2 };
                     } else {
-                        // Divisione intera
-                        n2 = getRandomInt(2, 9);
-                        let ans = getRandomInt(2, 9);
-                        n1 = n2 * ans; 
+                        n2 = getRandomInt(2, 9); let ans = getRandomInt(2, 9); n1 = n2 * ans; 
                         return { question: `${n1} : ${n2}`, answer: ans };
                     }
-
-                case 3: // Parentesi TONDE ( )
-                    // Schema: (A + B) x C
+                case 3: // Parentesi TONDE
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(1, 6); n2 = getRandomInt(1, 6); n3 = getRandomInt(2, 5);
                         return { question: `(${n1} + ${n2}) × ${n3}`, answer: (n1 + n2) * n3 };
                     } else {
-                        // Schema: A x (B - C)
                         n1 = getRandomInt(2, 5); n2 = getRandomInt(5, 9); n3 = getRandomInt(1, 4);
                         return { question: `${n1} × (${n2} - ${n3})`, answer: n1 * (n2 - n3) };
                     }
-
-                case 4: // Tonde complesse o miste
-                    // Schema: (A x B) - C
+                case 4: // Miste
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 5); n2 = getRandomInt(2, 5); n3 = getRandomInt(1, 10);
-                        let val = (n1*n2);
-                        if(val < n3) { let t=val; val=n3; n3=t; } // Evita negativi
                         return { question: `(${n1} × ${n2}) - ${n3}`, answer: (n1 * n2) - n3 };
                     } else {
-                        // Schema: A + (B : C)
-                        let c = getRandomInt(2,5);
-                        let temp = getRandomInt(2,6);
-                        let b = c * temp;
-                        let a = getRandomInt(2,10);
+                        let c = getRandomInt(2,5); let b = c * getRandomInt(2,6); let a = getRandomInt(2,10);
                         return { question: `${a} + (${b} : ${c})`, answer: a + (b/c) };
                     }
-
-                case 5: // Parentesi QUADRE [ ( ) ]
-                    // Schema: [ (A + B) x C ] - D
+                case 5: // QUADRE
                     {
-                        n1 = getRandomInt(1, 5); 
-                        n2 = getRandomInt(1, 5); // dentro la tonda
-                        n3 = getRandomInt(2, 4); // moltiplicatore tonda
-                        let inner = (n1 + n2) * n3;
-                        n4 = getRandomInt(1, inner - 1); // sottrai
-                        
-                        return { 
-                            question: `[(${n1} + ${n2}) × ${n3}] - ${n4}`, 
-                            answer: inner - n4 
-                        };
+                        n1 = getRandomInt(1, 4); n2 = getRandomInt(1, 4); n3 = getRandomInt(2, 3);
+                        let inner = (n1 + n2) * n3; n4 = getRandomInt(1, inner - 1);
+                        return { question: `[(${n1} + ${n2}) × ${n3}] - ${n4}`, answer: inner - n4 };
                     }
-
-                case 6: // Parentesi GRAFFE { [ ( ) ] }
-                    // Schema: { [ (A + B) x C ] - D } + E
+                case 6: // GRAFFE
                     {
-                        let a = getRandomInt(1,3); 
-                        let b = getRandomInt(1,3); // (a+b)
-                        let c = getRandomInt(2,4); // * c
-                        let sqVal = (a+b)*c; 
-                        
-                        let d = getRandomInt(1, sqVal - 1); // - d
-                        let curVal = sqVal - d;
-                        
-                        let e = getRandomInt(2, 10); // + e
-                        
-                        return { 
-                            question: `{[(${a}+${b}) × ${c}] - ${d}} + ${e}`, 
-                            answer: curVal + e 
-                        };
+                        let a=1,b=2,c=2,d=1,e=2; 
+                        return { question: `{[(${a}+${b}) × ${c}] - ${d}} + ${e}`, answer: ((a+b)*c - d) + e };
                     }
-
-                default: // Fallback
-                     return { question: `1 + 1`, answer: 2 };
+                default: return { question: `1 + 1`, answer: 2 };
             }
         }
 
         function startGame() {
             document.getElementById('setup-screen').style.display = 'none';
-            generateQuestion('A');
-            generateQuestion('B');
+            // Start Random Team
+            activeTeam = (Math.random() > 0.5) ? 'A' : 'B';
+            startTurn(activeTeam);
             updateVisuals();
+        }
+
+        function startTurn(team) {
+            clearInterval(timerRef);
+            activeTeam = team;
+            timerVal = 5;
+
+            // Update UI Active/Inactive
+            const zoneA = document.getElementById('zone-A');
+            const zoneB = document.getElementById('zone-B');
+            
+            if(team === 'A') {
+                zoneA.classList.add('zone-active'); zoneA.classList.remove('zone-inactive');
+                zoneB.classList.add('zone-inactive'); zoneB.classList.remove('zone-active');
+            } else {
+                zoneB.classList.add('zone-active'); zoneB.classList.remove('zone-inactive');
+                zoneA.classList.add('zone-inactive'); zoneA.classList.remove('zone-active');
+            }
+
+            // Generate new question JUST for active team
+            generateQuestion(team);
+            updateTimerUI();
+
+            // Start Countdown
+            timerRef = setInterval(() => {
+                timerVal--;
+                updateTimerUI();
+                if(timerVal <= 0) {
+                    clearInterval(timerRef);
+                    switchTurn(); // Tempo scaduto, cambio turno
+                }
+            }, 1000);
+        }
+
+        function switchTurn() {
+            // Pulisce input vecchi
+            inputs['A'] = ""; document.getElementById('input-a').textContent = "";
+            inputs['B'] = ""; document.getElementById('input-b').textContent = "";
+            
+            const nextTeam = (activeTeam === 'A') ? 'B' : 'A';
+            startTurn(nextTeam);
+        }
+
+        function updateTimerUI() {
+            document.getElementById('turn-indicator').textContent = timerVal;
+            // Color feedback
+            const timerDiv = document.getElementById('turn-indicator');
+            if (timerVal <= 2) timerDiv.style.color = '#ff0000';
+            else timerDiv.style.color = '#fff';
+            
+            // Bar style
+            const bar = document.getElementById('timer-bar');
+            bar.style.width = (timerVal * 20) + "%"; // 5s * 20 = 100%
+            if(timerVal <= 2) bar.style.background = 'red';
+            else bar.style.background = '#0f0';
         }
 
         function getDifficultyForTeam(team) {
             let advantage = 0;
-            if (team === 'A') {
-                if (ropePos < 0) advantage = Math.abs(ropePos);
-            } else {
-                if (ropePos > 0) advantage = ropePos;
-            }
+            if (team === 'A' && ropePos < 0) advantage = Math.abs(ropePos);
+            if (team === 'B' && ropePos > 0) advantage = ropePos;
             let level = 1 + advantage;
             if(level > 6) level = 6;
             return level;
@@ -396,7 +429,6 @@
         function generateQuestion(team) {
             const level = getDifficultyForTeam(team);
             const q = createMathProblem(level);
-            
             currentQ[team] = q;
 
             const prefix = (team === 'A') ? 'a' : 'b'; 
@@ -408,6 +440,8 @@
         }
 
         function tap(team, val) {
+            if(team !== activeTeam) return; // Prevent input from inactive team
+            
             if(val === 'C') inputs[team] = "";
             else if(inputs[team].length < 8) inputs[team] += val;
             
@@ -416,12 +450,14 @@
         }
 
         function submit(team) {
+            if(team !== activeTeam) return;
             if(inputs[team] === "") return;
 
             const val = parseFloat(inputs[team]);
             const correct = parseFloat(currentQ[team].answer);
 
             if (val === correct) {
+                // CORRETTO
                 if (team === 'A') ropePos -= 1; 
                 else ropePos += 1; 
 
@@ -430,23 +466,24 @@
                 if (ropePos <= -WIN_STEPS) endGame('BLU');
                 else if (ropePos >= WIN_STEPS) endGame('ROSSA');
                 else {
-                    generateQuestion(team);
-                    const prefix = (team === 'A') ? 'a' : 'b';
-                    document.getElementById(`card-${prefix}`).style.background = "#d4edda";
-                    setTimeout(() => document.getElementById(`card-${prefix}`).style.background = "#fff", 200);
+                    // Risposta giusta -> Cambio turno immediato
+                    switchTurn();
                 }
 
             } else {
+                // ERRORE -> Cambio turno immediato
                 const prefix = (team === 'A') ? 'a' : 'b';
                 const card = document.getElementById(`card-${prefix}`);
                 card.style.background = "#f8d7da";
                 card.classList.add('shake');
-                inputs[team] = "";
                 document.getElementById(`input-${prefix}`).textContent = "ERR";
+                
+                clearInterval(timerRef); // Ferma tempo
+                
                 setTimeout(() => {
                     card.style.background = "#fff";
                     card.classList.remove('shake');
-                    document.getElementById(`input-${prefix}`).textContent = "";
+                    switchTurn(); // Passa la mano
                 }, 500);
             }
         }
@@ -457,13 +494,13 @@
         }
 
         function endGame(winner) {
+            clearInterval(timerRef);
             const overlay = document.getElementById('win-overlay');
             const txt = document.getElementById('win-txt');
             overlay.style.display = 'flex';
             txt.textContent = winner + " VINCE!";
             txt.style.color = (winner === 'BLU') ? 'var(--blue-team)' : 'var(--red-team)';
         }
-
     </script>
 </body>
 </html>
