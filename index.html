@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiro alla Fune - Random Mix</title>
+    <title>Tiro alla Fune - Turni Veloci</title>
     <style>
         :root {
             --bg-color: #2b2d42;
@@ -221,7 +221,7 @@
 
     <div id="setup-screen">
         <h1 style="font-size: 3rem; margin-bottom: 10px; margin-top: 50px;">Tiro alla Fune</h1>
-        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Mix Difficoltà</h2>
+        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Sfida a Turni</h2>
         
         <div class="start-box">
             
@@ -233,7 +233,7 @@
                 </div>
             </div>
 
-            <p style="font-size: 0.9rem; opacity: 0.7;">Le difficoltà (1-6) si alternano casualmente!</p>
+            <p style="font-size: 0.9rem; opacity: 0.7;">Regole: Rispondi corretto per tirare.<br>Se sbagli, perdi il turno subito!</p>
             <button class="btn-start" onclick="startGame()">INIZIA PARTITA</button>
         </div>
     </div>
@@ -320,9 +320,8 @@
         const WIN_STEPS = 6;
         let inputs = { A: "", B: "" };
         let currentQ = { A: null, B: null };
-        let lastLevel = { A: 0, B: 0 }; // Memoria per evitare ripetizioni
+        let lastLevel = { A: 0, B: 0 }; 
         
-        // TURN LOGIC
         let activeTeam = 'A'; 
         let timerVal = 10;
         let selectedTime = 10;
@@ -332,11 +331,10 @@
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        // --- GENERATORE ESPRESSIONI ---
         function createMathProblem(level) {
             let n1, n2, n3, n4;
             switch(level) {
-                case 1: // Base
+                case 1: 
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 12); n2 = getRandomInt(2, 12);
                         return { question: `${n1} + ${n2}`, answer: n1 + n2 };
@@ -344,7 +342,7 @@
                         n1 = getRandomInt(10, 20); n2 = getRandomInt(1, 9);
                         return { question: `${n1} - ${n2}`, answer: n1 - n2 };
                     }
-                case 2: // Molt/Div
+                case 2: 
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 9); n2 = getRandomInt(2, 9);
                         return { question: `${n1} × ${n2}`, answer: n1 * n2 };
@@ -352,7 +350,7 @@
                         n2 = getRandomInt(2, 9); let ans = getRandomInt(2, 9); n1 = n2 * ans; 
                         return { question: `${n1} : ${n2}`, answer: ans };
                     }
-                case 3: // Tonde Semplici
+                case 3: 
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(1, 6); n2 = getRandomInt(1, 6); n3 = getRandomInt(2, 5);
                         return { question: `(${n1} + ${n2}) × ${n3}`, answer: (n1 + n2) * n3 };
@@ -360,7 +358,7 @@
                         n1 = getRandomInt(2, 5); n2 = getRandomInt(5, 9); n3 = getRandomInt(1, 4);
                         return { question: `${n1} × (${n2} - ${n3})`, answer: n1 * (n2 - n3) };
                     }
-                case 4: // Tonde Medie
+                case 4: 
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 5); n2 = getRandomInt(2, 5); n3 = getRandomInt(1, 10);
                         return { question: `(${n1} × ${n2}) - ${n3}`, answer: (n1 * n2) - n3 };
@@ -368,16 +366,15 @@
                         let c = getRandomInt(2,5); let b = c * getRandomInt(2,6); let a = getRandomInt(2,10);
                         return { question: `${a} + (${b} : ${c})`, answer: a + (b/c) };
                     }
-                case 5: // Quadre
+                case 5: 
                     {
                         n1 = getRandomInt(1, 4); n2 = getRandomInt(1, 4); n3 = getRandomInt(2, 3);
                         let inner = (n1 + n2) * n3; n4 = getRandomInt(1, inner - 1);
                         return { question: `[(${n1} + ${n2}) × ${n3}] - ${n4}`, answer: inner - n4 };
                     }
-                case 6: // Graffe
+                case 6: 
                     {
                         let a=1,b=2,c=2,d=1,e=2; 
-                        // Semplificato un po' per essere fattibile a mente
                         return { question: `{[(${a}+${b}) × ${c}] - ${d}} + ${e}`, answer: ((a+b)*c - d) + e };
                     }
                 default: return { question: `1 + 1`, answer: 2 };
@@ -385,13 +382,9 @@
         }
 
         function startGame() {
-            // Leggi il valore dal pannello
             const inputVal = parseInt(document.getElementById('turn-time').value);
-            if(inputVal && inputVal > 0) {
-                selectedTime = inputVal;
-            } else {
-                selectedTime = 10; 
-            }
+            if(inputVal && inputVal > 0) selectedTime = inputVal;
+            else selectedTime = 10; 
 
             document.getElementById('setup-screen').style.display = 'none';
             activeTeam = (Math.random() > 0.5) ? 'A' : 'B';
@@ -404,7 +397,6 @@
             activeTeam = team;
             timerVal = selectedTime; 
 
-            // Update UI Active/Inactive
             const zoneA = document.getElementById('zone-A');
             const zoneB = document.getElementById('zone-B');
             
@@ -452,14 +444,10 @@
         }
 
         function getDifficultyForTeam(team) {
-            // NUOVA LOGICA: Difficoltà casuale (1-6)
-            // Cerca di non ripetere lo stesso livello due volte di fila
             let newLevel;
             do {
                 newLevel = getRandomInt(1, 6);
             } while (newLevel === lastLevel[team] && Math.random() > 0.2); 
-            // c'è una piccola probabilità (0.2) che permetta la ripetizione, altrimenti cambia.
-            
             lastLevel[team] = newLevel;
             return newLevel;
         }
@@ -495,6 +483,7 @@
             const correct = parseFloat(currentQ[team].answer);
 
             if (val === correct) {
+                // RISPOSTA CORRETTA
                 if (team === 'A') ropePos -= 1; 
                 else ropePos += 1; 
 
@@ -503,23 +492,27 @@
                 if (ropePos <= -WIN_STEPS) endGame('BLU');
                 else if (ropePos >= WIN_STEPS) endGame('ROSSA');
                 else {
-                    switchTurn();
+                    switchTurn(); // Passa il turno
                 }
 
             } else {
+                // RISPOSTA SBAGLIATA -> STOP E CAMBIO IMMEDIATO
+                clearInterval(timerRef); // Blocca il tempo subito
+
                 const prefix = (team === 'A') ? 'a' : 'b';
                 const card = document.getElementById(`card-${prefix}`);
+                
+                // Feedback visivo rapido
                 card.style.background = "#f8d7da";
                 card.classList.add('shake');
                 document.getElementById(`input-${prefix}`).textContent = "ERR";
-                
-                clearInterval(timerRef); 
-                
+
+                // Ritardo minimo (300ms) solo per far vedere il flash rosso dell'errore
                 setTimeout(() => {
                     card.style.background = "#fff";
                     card.classList.remove('shake');
-                    switchTurn(); 
-                }, 500);
+                    switchTurn(); // Passa il turno all'altra squadra
+                }, 300);
             }
         }
 
