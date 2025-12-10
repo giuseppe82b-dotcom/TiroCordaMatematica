@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiro alla Fune - Turni 5s</title>
+    <title>Tiro alla Fune - Configurable Timer</title>
     <style>
         :root {
             --bg-color: #2b2d42;
@@ -40,12 +40,33 @@
             border: 2px solid #666; padding: 40px; border-radius: 20px;
             background: rgba(255,255,255,0.05);
             margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;
+            width: 300px;
+        }
+
+        .settings-panel {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+        }
+
+        .time-input {
+            background: #000;
+            color: var(--rope-color);
+            border: 2px solid #666;
+            font-size: 1.5rem;
+            width: 70px;
+            padding: 5px;
+            text-align: center;
+            border-radius: 5px;
+            font-weight: bold;
         }
 
         .btn-start {
             background-color: #fca311; color: #000;
-            font-size: 2rem; font-weight: bold;
-            padding: 15px 40px; border: none; border-radius: 50px;
+            font-size: 1.5rem; font-weight: bold;
+            padding: 15px 30px; border: none; border-radius: 50px;
             cursor: pointer; transition: transform 0.2s;
             box-shadow: 0 5px 15px rgba(252, 163, 17, 0.4);
         }
@@ -131,7 +152,6 @@
             transition: opacity 0.3s, filter 0.3s;
         }
 
-        /* Stili per turno attivo/inattivo */
         .zone-active { opacity: 1; filter: none; pointer-events: auto; }
         .zone-inactive { opacity: 0.3; filter: grayscale(100%); pointer-events: none; }
 
@@ -201,11 +221,19 @@
 
     <div id="setup-screen">
         <h1 style="font-size: 3rem; margin-bottom: 10px; margin-top: 50px;">Tiro alla Fune</h1>
-        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Sfida a Turni: 5 Secondi!</h2>
+        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Sfida a Turni</h2>
         
         <div class="start-box">
-            <p>5 secondi per rispondere.</p>
-            <p>Se sbagli o scade il tempo, tocca all'avversario.</p>
+            
+            <div class="settings-panel">
+                <p style="margin: 0 0 10px 0; font-size: 1.1rem;">Tempo per Turno:</p>
+                <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
+                    <input type="number" id="turn-time" class="time-input" value="5" min="3" max="60">
+                    <span style="font-size: 1.2rem;">secondi</span>
+                </div>
+            </div>
+
+            <p style="font-size: 0.9rem; opacity: 0.7;">Veloce o Lento? Decidi tu!</p>
             <button class="btn-start" onclick="startGame()">INIZIA PARTITA</button>
         </div>
     </div>
@@ -288,26 +316,26 @@
 
     <script>
         // --- LOGICA DI GIOCO ---
-        let ropePos = 0; // -6 (Blu) ... +6 (Rossa)
+        let ropePos = 0; 
         const WIN_STEPS = 6;
-        
         let inputs = { A: "", B: "" };
         let currentQ = { A: null, B: null };
         
         // TURN LOGIC
-        let activeTeam = 'A'; // 'A' (Blu) o 'B' (Rossa)
+        let activeTeam = 'A'; 
         let timerVal = 5;
+        let selectedTime = 5; // Tempo scelto dall'utente
         let timerRef = null;
 
         function getRandomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        // --- GENERATORE ESPRESSIONI (Con Parentesi) ---
+        // --- GENERATORE ESPRESSIONI ---
         function createMathProblem(level) {
             let n1, n2, n3, n4;
             switch(level) {
-                case 1: // Base
+                case 1: 
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 12); n2 = getRandomInt(2, 12);
                         return { question: `${n1} + ${n2}`, answer: n1 + n2 };
@@ -315,7 +343,7 @@
                         n1 = getRandomInt(10, 20); n2 = getRandomInt(1, 9);
                         return { question: `${n1} - ${n2}`, answer: n1 - n2 };
                     }
-                case 2: // Moltiplicazioni/Divisioni
+                case 2: 
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 9); n2 = getRandomInt(2, 9);
                         return { question: `${n1} × ${n2}`, answer: n1 * n2 };
@@ -355,6 +383,14 @@
         }
 
         function startGame() {
+            // Leggi il valore dal pannello
+            const inputVal = parseInt(document.getElementById('turn-time').value);
+            if(inputVal && inputVal > 0) {
+                selectedTime = inputVal;
+            } else {
+                selectedTime = 5; // Fallback
+            }
+
             document.getElementById('setup-screen').style.display = 'none';
             // Start Random Team
             activeTeam = (Math.random() > 0.5) ? 'A' : 'B';
@@ -365,7 +401,7 @@
         function startTurn(team) {
             clearInterval(timerRef);
             activeTeam = team;
-            timerVal = 5;
+            timerVal = selectedTime; // Usa il tempo scelto
 
             // Update UI Active/Inactive
             const zoneA = document.getElementById('zone-A');
@@ -379,7 +415,6 @@
                 zoneA.classList.add('zone-inactive'); zoneA.classList.remove('zone-active');
             }
 
-            // Generate new question JUST for active team
             generateQuestion(team);
             updateTimerUI();
 
@@ -389,13 +424,12 @@
                 updateTimerUI();
                 if(timerVal <= 0) {
                     clearInterval(timerRef);
-                    switchTurn(); // Tempo scaduto, cambio turno
+                    switchTurn(); 
                 }
             }, 1000);
         }
 
         function switchTurn() {
-            // Pulisce input vecchi
             inputs['A'] = ""; document.getElementById('input-a').textContent = "";
             inputs['B'] = ""; document.getElementById('input-b').textContent = "";
             
@@ -407,13 +441,15 @@
             document.getElementById('turn-indicator').textContent = timerVal;
             // Color feedback
             const timerDiv = document.getElementById('turn-indicator');
-            if (timerVal <= 2) timerDiv.style.color = '#ff0000';
+            if (timerVal <= 3) timerDiv.style.color = '#ff0000';
             else timerDiv.style.color = '#fff';
             
-            // Bar style
+            // Calcolo larghezza barra in percentuale
             const bar = document.getElementById('timer-bar');
-            bar.style.width = (timerVal * 20) + "%"; // 5s * 20 = 100%
-            if(timerVal <= 2) bar.style.background = 'red';
+            const percentage = (timerVal / selectedTime) * 100;
+            bar.style.width = percentage + "%";
+            
+            if(percentage <= 25) bar.style.background = 'red';
             else bar.style.background = '#0f0';
         }
 
@@ -440,7 +476,7 @@
         }
 
         function tap(team, val) {
-            if(team !== activeTeam) return; // Prevent input from inactive team
+            if(team !== activeTeam) return; 
             
             if(val === 'C') inputs[team] = "";
             else if(inputs[team].length < 8) inputs[team] += val;
@@ -457,7 +493,6 @@
             const correct = parseFloat(currentQ[team].answer);
 
             if (val === correct) {
-                // CORRETTO
                 if (team === 'A') ropePos -= 1; 
                 else ropePos += 1; 
 
@@ -466,24 +501,22 @@
                 if (ropePos <= -WIN_STEPS) endGame('BLU');
                 else if (ropePos >= WIN_STEPS) endGame('ROSSA');
                 else {
-                    // Risposta giusta -> Cambio turno immediato
                     switchTurn();
                 }
 
             } else {
-                // ERRORE -> Cambio turno immediato
                 const prefix = (team === 'A') ? 'a' : 'b';
                 const card = document.getElementById(`card-${prefix}`);
                 card.style.background = "#f8d7da";
                 card.classList.add('shake');
                 document.getElementById(`input-${prefix}`).textContent = "ERR";
                 
-                clearInterval(timerRef); // Ferma tempo
+                clearInterval(timerRef); 
                 
                 setTimeout(() => {
                     card.style.background = "#fff";
                     card.classList.remove('shake');
-                    switchTurn(); // Passa la mano
+                    switchTurn(); 
                 }, 500);
             }
         }
