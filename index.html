@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiro alla Fune - Configurable Timer</title>
+    <title>Tiro alla Fune - Random Mix</title>
     <style>
         :root {
             --bg-color: #2b2d42;
@@ -40,7 +40,7 @@
             border: 2px solid #666; padding: 40px; border-radius: 20px;
             background: rgba(255,255,255,0.05);
             margin-bottom: 20px; display: flex; flex-direction: column; gap: 15px;
-            width: 300px;
+            width: 320px;
         }
 
         .settings-panel {
@@ -221,19 +221,19 @@
 
     <div id="setup-screen">
         <h1 style="font-size: 3rem; margin-bottom: 10px; margin-top: 50px;">Tiro alla Fune</h1>
-        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Sfida a Turni</h2>
+        <h2 style="font-size: 1.5rem; font-weight:300; margin-bottom: 30px; color:#fca311;">Mix Difficoltà</h2>
         
         <div class="start-box">
             
             <div class="settings-panel">
                 <p style="margin: 0 0 10px 0; font-size: 1.1rem;">Tempo per Turno:</p>
                 <div style="display:flex; justify-content:center; align-items:center; gap:10px;">
-                    <input type="number" id="turn-time" class="time-input" value="5" min="3" max="60">
+                    <input type="number" id="turn-time" class="time-input" value="10" min="3" max="60">
                     <span style="font-size: 1.2rem;">secondi</span>
                 </div>
             </div>
 
-            <p style="font-size: 0.9rem; opacity: 0.7;">Veloce o Lento? Decidi tu!</p>
+            <p style="font-size: 0.9rem; opacity: 0.7;">Le difficoltà (1-6) si alternano casualmente!</p>
             <button class="btn-start" onclick="startGame()">INIZIA PARTITA</button>
         </div>
     </div>
@@ -257,7 +257,7 @@
 
     <div id="battle-ground">
         
-        <div id="turn-indicator">5</div>
+        <div id="turn-indicator">10</div>
 
         <div class="team-zone zone-blue" id="zone-A">
             <div class="team-title text-blue">BLU</div>
@@ -320,11 +320,12 @@
         const WIN_STEPS = 6;
         let inputs = { A: "", B: "" };
         let currentQ = { A: null, B: null };
+        let lastLevel = { A: 0, B: 0 }; // Memoria per evitare ripetizioni
         
         // TURN LOGIC
         let activeTeam = 'A'; 
-        let timerVal = 5;
-        let selectedTime = 5; // Tempo scelto dall'utente
+        let timerVal = 10;
+        let selectedTime = 10;
         let timerRef = null;
 
         function getRandomInt(min, max) {
@@ -335,7 +336,7 @@
         function createMathProblem(level) {
             let n1, n2, n3, n4;
             switch(level) {
-                case 1: 
+                case 1: // Base
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 12); n2 = getRandomInt(2, 12);
                         return { question: `${n1} + ${n2}`, answer: n1 + n2 };
@@ -343,7 +344,7 @@
                         n1 = getRandomInt(10, 20); n2 = getRandomInt(1, 9);
                         return { question: `${n1} - ${n2}`, answer: n1 - n2 };
                     }
-                case 2: 
+                case 2: // Molt/Div
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 9); n2 = getRandomInt(2, 9);
                         return { question: `${n1} × ${n2}`, answer: n1 * n2 };
@@ -351,7 +352,7 @@
                         n2 = getRandomInt(2, 9); let ans = getRandomInt(2, 9); n1 = n2 * ans; 
                         return { question: `${n1} : ${n2}`, answer: ans };
                     }
-                case 3: // Parentesi TONDE
+                case 3: // Tonde Semplici
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(1, 6); n2 = getRandomInt(1, 6); n3 = getRandomInt(2, 5);
                         return { question: `(${n1} + ${n2}) × ${n3}`, answer: (n1 + n2) * n3 };
@@ -359,7 +360,7 @@
                         n1 = getRandomInt(2, 5); n2 = getRandomInt(5, 9); n3 = getRandomInt(1, 4);
                         return { question: `${n1} × (${n2} - ${n3})`, answer: n1 * (n2 - n3) };
                     }
-                case 4: // Miste
+                case 4: // Tonde Medie
                     if(Math.random() > 0.5) {
                         n1 = getRandomInt(2, 5); n2 = getRandomInt(2, 5); n3 = getRandomInt(1, 10);
                         return { question: `(${n1} × ${n2}) - ${n3}`, answer: (n1 * n2) - n3 };
@@ -367,15 +368,16 @@
                         let c = getRandomInt(2,5); let b = c * getRandomInt(2,6); let a = getRandomInt(2,10);
                         return { question: `${a} + (${b} : ${c})`, answer: a + (b/c) };
                     }
-                case 5: // QUADRE
+                case 5: // Quadre
                     {
                         n1 = getRandomInt(1, 4); n2 = getRandomInt(1, 4); n3 = getRandomInt(2, 3);
                         let inner = (n1 + n2) * n3; n4 = getRandomInt(1, inner - 1);
                         return { question: `[(${n1} + ${n2}) × ${n3}] - ${n4}`, answer: inner - n4 };
                     }
-                case 6: // GRAFFE
+                case 6: // Graffe
                     {
                         let a=1,b=2,c=2,d=1,e=2; 
+                        // Semplificato un po' per essere fattibile a mente
                         return { question: `{[(${a}+${b}) × ${c}] - ${d}} + ${e}`, answer: ((a+b)*c - d) + e };
                     }
                 default: return { question: `1 + 1`, answer: 2 };
@@ -388,11 +390,10 @@
             if(inputVal && inputVal > 0) {
                 selectedTime = inputVal;
             } else {
-                selectedTime = 5; // Fallback
+                selectedTime = 10; 
             }
 
             document.getElementById('setup-screen').style.display = 'none';
-            // Start Random Team
             activeTeam = (Math.random() > 0.5) ? 'A' : 'B';
             startTurn(activeTeam);
             updateVisuals();
@@ -401,7 +402,7 @@
         function startTurn(team) {
             clearInterval(timerRef);
             activeTeam = team;
-            timerVal = selectedTime; // Usa il tempo scelto
+            timerVal = selectedTime; 
 
             // Update UI Active/Inactive
             const zoneA = document.getElementById('zone-A');
@@ -418,7 +419,6 @@
             generateQuestion(team);
             updateTimerUI();
 
-            // Start Countdown
             timerRef = setInterval(() => {
                 timerVal--;
                 updateTimerUI();
@@ -439,12 +439,10 @@
 
         function updateTimerUI() {
             document.getElementById('turn-indicator').textContent = timerVal;
-            // Color feedback
             const timerDiv = document.getElementById('turn-indicator');
             if (timerVal <= 3) timerDiv.style.color = '#ff0000';
             else timerDiv.style.color = '#fff';
             
-            // Calcolo larghezza barra in percentuale
             const bar = document.getElementById('timer-bar');
             const percentage = (timerVal / selectedTime) * 100;
             bar.style.width = percentage + "%";
@@ -454,12 +452,16 @@
         }
 
         function getDifficultyForTeam(team) {
-            let advantage = 0;
-            if (team === 'A' && ropePos < 0) advantage = Math.abs(ropePos);
-            if (team === 'B' && ropePos > 0) advantage = ropePos;
-            let level = 1 + advantage;
-            if(level > 6) level = 6;
-            return level;
+            // NUOVA LOGICA: Difficoltà casuale (1-6)
+            // Cerca di non ripetere lo stesso livello due volte di fila
+            let newLevel;
+            do {
+                newLevel = getRandomInt(1, 6);
+            } while (newLevel === lastLevel[team] && Math.random() > 0.2); 
+            // c'è una piccola probabilità (0.2) che permetta la ripetizione, altrimenti cambia.
+            
+            lastLevel[team] = newLevel;
+            return newLevel;
         }
 
         function generateQuestion(team) {
